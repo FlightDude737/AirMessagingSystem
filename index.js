@@ -20,6 +20,14 @@ io.on('connection', (socket) => {
   } else {
     console.log('no-users')
   }
+  socket.on('printMessage', (message, username) => {
+    io.emit('new-message', message, username)
+
+    /* Possible idea for left and right had side coordination:
+    socket.broadcast.emit('your message')
+    socket.emit(node with text-align: left (seperate function)) 
+    Specific Socket.id => io.to(socketId).emit('hey', 'I just met you'); */
+  })
   socket.on('disconnect', () => {
     var every = 0;
     var dataBuffer = fs.readFileSync('public/userinfo/users.json')
@@ -34,6 +42,9 @@ io.on('connection', (socket) => {
         every++
       }
     })
+  })
+  socket.on('terminal-receive', (info) => {
+    io.emit('terminal', info)
   })
   socket.on('new-user', username => {
     var dataBuffer = fs.readFileSync('public/userinfo/users.json')
