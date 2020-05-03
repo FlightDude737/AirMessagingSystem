@@ -12,6 +12,15 @@
         top: -5px;
         left: 0.5px;
       }
+      ::-webkit-scrollbar{
+        width: 5px;
+        background-color: transparent;
+        margin-right: 10px;
+      }
+      ::-webkit-scrollbar-thumb{
+        width: 5px;
+        background-color: gray;
+      }
     </style>
   </head>
   <body style="background-color: #202020; margin: 0px;">
@@ -44,14 +53,20 @@
   <script>
     var socket = io()
     var username = false;
-
     var usernameString = ""
+    var connected = false
 
     document.getElementById('messageListner').addEventListener('keyup', (e) => {
       e.preventDefault()
       if (e.keyCode == 13){
-        var message = document.getElementById('messageListner').value
-        socket.emit('printMessage', message, usernameString)
+        if (connected == true) {
+          var message = document.getElementById('messageListner').value
+          socket.emit('printMessage', message, usernameString)
+          document.getElementById('messageListner').value = ""
+        } else {
+          terminal("[SERVER] You are not connected. To log into Air Message, click the 'Username' button at the top, and type in your username. Then, select 'Connect' to connect to the server.", "error")
+          document.getElementById('messageListner').value = ""
+        }
       }
     })
 
@@ -64,6 +79,8 @@
       newMessage.innerHTML = username + ": " + message
       newMessage.style.fontSize = "15px"
       document.getElementById("messages-node").appendChild(newMessage)
+      var messageBox = document.getElementById('messages-node')
+      messageBox.scrollTop = messageBox.scrollHeight
     })
 
     function usernameCheck(){
@@ -74,6 +91,7 @@
       document.getElementById('connect').style.backgroundColor = "transparent"
       socket.emit('disconnected-user', sessionStorage.getItem('socket-id'))
       document.getElementById('createUsername').style.backgroundColor = "limegreen"
+      terminal("[SERVER] Select 'Connect' to connect to the server and start chatting!", "info")
     }
 
     var onPress = 0;
@@ -81,25 +99,27 @@
       if (onPress == 0) {
         if (username == true) {
           document.getElementById('connect').style.backgroundColor = "#005C5C"
-          socket.emit('new-user', localStorage.getItem('username'))
+          socket.emit('new-user', usernameString)
           socket.emit('terminal-receive', "[SERVER] " + usernameString + " has connected.")
           document.getElementById('createUsername').style.backgroundColor = "#005C5C"
+          connected = true
           onPress++
         } else {
-          // var newMessage = document.createElement('p')
           document.getElementById('createUsername').style.backgroundColor = "#990000"
+          terminal("[SERVER] You do not currently have a username.", "error")
           onPress = 0;
         }
       } else if (onPress == 1) {
         document.getElementById('connect').style.backgroundColor = "transparent"
         socket.emit('disconnected-user', sessionStorage.getItem('socket-id'))
         socket.emit('terminal-receive', "[SERVER] " + usernameString + " has disconnected")
+        connected = false
         onPress = 0;
       }
     })
 
     socket.on('terminal', (info) => {
-      terminal(info)
+      terminal(info, "info")
     })
 
     socket.on('get-id', (id) => {
@@ -123,15 +143,21 @@
       removing.parentNode.removeChild(removing)
     })
 
-    function terminal(information) {
+    function terminal(information, type) {
       var newMessage = document.createElement('p')
       newMessage.style.margin = "10px"
       newMessage.marginBottom = "1px"
-      newMessage.style.color = "#FFFFFF"
+      if (type == "info"){
+        newMessage.style.color = "#FFFFFF"
+      } else if (type == "error") {
+        newMessage.style.color = "#FF0000"
+      }
       newMessage.style.fontFamily = "monospace"
       newMessage.innerHTML = information
       newMessage.style.fontSize = "15px"
       document.getElementById("messages-node").appendChild(newMessage)
+      var messageBox = document.getElementById('messages-node')
+      messageBox.scrollTop = messageBox.scrollHeight
     }
   </script>
 </html>
