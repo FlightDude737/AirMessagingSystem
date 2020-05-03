@@ -1,0 +1,99 @@
+<html>
+  <head>
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans&display=swap" rel="stylesheet">
+    <title>Air Message</title>
+    <link rel="icon" href="favicon.png">
+    <style>
+      #messageBox:after{
+        content: '';
+        position: absolute;
+        width: 90px;
+        border: 5px solid #1a1a1a;
+        top: -5px;
+        left: 0.5px;
+      }
+    </style>
+  </head>
+  <body style="background-color: #202020; margin: 0px;">
+    <nav style="width: 100vw; height: 50px; position: relative; box-shadow: 0 0 20px rbga(0, 0, 0, 0.4)">
+      <img src="whiteIcon.png" style="width: 30px; margin-top: 10px; margin-left: 10px;">
+      <button style="font-size: auto; border: 1.5px solid gray; color: white; background-color: transparent; font-family: open sans; padding: 4px; padding-left: 10px; padding-right: 10px; height: 35px; position: absolute; top: 50%; margin-top: -17.5px; left: 50px; outline: none;" id="connect">Connect</button><!--
+      --><button style="font-size: auto; border: 1.5px solid gray; color: white; background-color: transparent; font-family: open sans; padding: 4px; padding-left: 10px; padding-right: 10px; height: 35px; position: absolute; top: 50%; margin-top: -17.5px; left: 135px;">Settings</button><!--
+      --><button style="font-size: auto; border: 1.5px solid gray; color: white; background-color: transparent; font-family: open sans; padding: 4px; padding-left: 10px; padding-right: 10px; height: 35px; position: absolute; top: 50%; margin-top: -17.5px; left: 217px;" id="createUsername" onclick="usernameCheck()">Username</button><!--
+      --><button onclick="window.location='https://airmessage.flightdude.repl.co/'"style="font-size: auto; border: 1.5px solid gray; color: white; background-color: #810000; font-family: open sans; padding: 4px; padding-left: 10px; padding-right: 10px; height: 35px; position: absolute; top: 50%; margin-top: -17.5px; left: 315px;">X</button>
+    </nav>
+    <div style="width: 100vw; height: calc(100vh - 70px);">
+      <div style="float: left; width: 300px; height: 100%;">
+        <center>
+          <p style="height: 15px; margin-top: 10px; margin-bottom: 10px; color: white; font-size: 15px; font-family: monospace; margin-left: 10px;">Controllers in Range:</p>
+          <div id="controllers" style="width: 100%; height: calc(100% - 35px); border: 1.5px solid gray; background-color: #1a1a1a; margin-left: 10px; text-align: left;"></div>
+        </center>
+      </div>
+      <div style="float: right; width: calc(100vw - 350px); height: 100%; margin-right: 15px;">
+        <p style="height: 27px; width: auto; margin: 0px;border-top-left-radius: 10px; border-top-right-radius: 10px;background-color: #1a1a1a; width: 100px; color: white;font-family: monospace; border: 1.5px solid gray; border-bottom: none; padding-top: 8px; font-size: 15px;text-align: center;">Messages</p>
+        <center>
+          <div id="messageBox" style="width: 100%; height: calc(100% - 35px); border: 1.5px solid gray; background-color: #1a1a1a; position: relative;">
+            <div style="width: calc(100% - 20px); height: calc(100% - 70px); border: 1px solid gray; margin: 10px;"></div>
+            <input type="text" style="width: calc(100% - 20px); padding-left: 10px; caret-color: white; height: 35px; border: 1px solid gray; background-color: transparent; margin: 10px; margin-top: 0px; color: white; outline: none;font-family: monospace" placeholder="Write your message here.">
+          </div>
+        </center>
+      </div>
+    </div>
+  </body>
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    var socket = io()
+    var username = false;
+
+    if (localStorage.getItem('username') !== "" && localStorage.getItem('username') !== "null" && localStorage.getItem('username') !== undefined && localStorage.getItem('username') !== null) {
+      username = true
+    }
+
+    function usernameCheck(){
+      var input = prompt("What's your username?")
+      localStorage.setItem('username', input)
+      username = true
+      document.getElementById('connect').style.backgroundColor = "transparent"
+      socket.emit('disconnected-user', sessionStorage.getItem('socket-id'))
+    }
+
+    var onPress = 0;
+    document.getElementById('connect').addEventListener('click', () => {
+      if (onPress == 0) {
+        if (username == true) {
+          document.getElementById('connect').style.backgroundColor = "#005C5C"
+          socket.emit('new-user', localStorage.getItem('username'))
+          document.getElementById('createUsername').style.backgroundColor = "#005C5C"
+        } else {
+          document.getElementById('createUsername').style.backgroundColor = "#990000"
+        }
+        onPress++;
+      } else if (onPress == 1) {
+        document.getElementById('connect').style.backgroundColor = "transparent"
+        socket.emit('disconnected-user', sessionStorage.getItem('socket-id'))
+        onPress = 0;
+      }
+    })
+
+    socket.on('get-id', (id) => {
+      sessionStorage.setItem('socket-id', id)
+    })
+
+    socket.on('add-controller', (username, id) => {
+      var newController = document.createElement('p')
+      newController.style.margin = "10px"
+      newController.marginBottom = "1px"
+      newController.style.color = "#FFFF00"
+      newController.style.fontFamily = "monospace"
+      newController.innerHTML = "1" + Math.floor(Math.random()*2 + 1) +  Math.floor(Math.random()*9) + "." + Math.floor(Math.random()*9) +  "0" + ": " + username
+      newController.id = id
+      newController.style.fontSize = "15px"
+      document.getElementById("controllers").appendChild(newController)
+    })
+
+    socket.on('delete-user', (id) => {
+      var removing = document.querySelector('#' + id)
+      removing.parentNode.removeChild(removing)
+    })
+  </script>
+</html>
