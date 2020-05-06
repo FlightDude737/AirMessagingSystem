@@ -20,7 +20,23 @@ io.on('connection', (socket) => {
   } else {
     console.log('no-users')
   }
+  if (JSON.parse(fs.readFileSync('public/userinfo/group-chats.json')) !== "[]") {
+    var users = JSON.parse(fs.readFileSync('public/userinfo/group-chats.json'))
+    users.forEach((userdata) => {
+      io.emit('new-message', userdata.message, userdata.username)
+    })
+  }
+  socket.on('keydown-user', (username) => {
+    socket.broadcast.emit('user-is-typing', username)
+  })
   socket.on('printMessage', (message, username) => {
+    var data = JSON.parse(fs.readFileSync('public/userinfo/group-chats.json'))
+    data.push({
+      username,
+      message
+    })
+    var newData = JSON.stringify(data)
+    fs.writeFileSync('public/userinfo/group-chats.json', newData)
     io.emit('new-message', message, username)
 
     /* Possible idea for left and right had side coordination:
@@ -37,11 +53,15 @@ io.on('connection', (socket) => {
         users.splice(every, 1)
         var newData = JSON.stringify(users)
         fs.writeFileSync('public/userinfo/users.json', newData)
-       io.emit('delete-user', socket.id)
+        socket.broadcast.emit('delete-user', socket.id)
+        io.emit('terminal', "[SERVER] " + data.username + " has disconnected.")
       } else {
         every++
       }
     })
+  })
+  socket.on('private-message', (username, id, message) => {
+    io.to(id).emit('private-message-client', username, message)
   })
   socket.on('terminal-receive', (info) => {
     io.emit('terminal', info)
